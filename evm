@@ -1,0 +1,114 @@
+#!/bin/bash
+
+
+myversion=0.1.1
+bindir=/usr/local/bin/
+bin="$bindir/elm"
+home="$HOME/.evm" 
+
+isversion() {
+  printf "$1" | egrep -q '^[0-9]+\.[0-9]+(\.[0-9]+)?$'
+}
+
+usage() {
+echo "Usage: $0 <command> [options] ...params
+version: $myversion
+commands:
+  help # show this message
+  use 0.18 # use version 0.18.x
+  upgrade # installs the latest minor version patch release 
+  install 0.17 # install the latest version 0.17
+examples:
+  evm use 0.18
+  evm upgrade 0.18
+  evm install 0.18
+"
+}
+err() {
+  echo "$1"; exit 1;
+}
+# http://install.elm-lang.org/Elm-Platform-0.18.pkg
+
+# shopt -s extglob;
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    use ) isversion "$2" || err "bad version number $2"; cmd='use'; version="$2"; shift ;;
+    help | --help | -v ) usage; exit;;
+    version | --version | -v ) echo $myversion; exit;;
+    *) usage; exit 1 ;;
+  esac
+  shift
+done
+
+
+stem(){ 
+  printf $1 | sed -E 's/([0-9]+\.[0-9]+)(\.[0-9]+)?/\1/' 
+}
+
+[ -d "$home" ] || mkdir -p "$home/versions"
+
+
+vdir() { 
+  printf "$home/versions/$(stem "$1")" 
+}
+
+hsh() {
+  md5 -q "$1"
+}
+
+same() { 
+  [ -f "$1" ] && [ -f "$2" ] && [ "$(hsh "$1")" == "$(hsh "$2")" ]
+}
+
+# esame() { 
+#
+#   [ -f "$1" ] && [ -f "$2" ] && echo "$(md5 "$1") == $(md5 "$2")"
+# }
+
+has() { 
+  command -v "$1" >/dev/null 2>&1 
+}
+binversion() { 
+  [ -f "$bin" ] && "$bin" --version 
+}
+
+
+save() {
+  
+  local version
+  version=$(binversion)
+  if [ "$version" != "" ]; then
+    local dir 
+    dir=$(vdir $version)
+
+    if ! same "$bin" "$dir/elm"; then
+      mkdir -p "$dir"
+      cp "$bin"* "$dir/" 
+    fi
+  fi
+}
+restore() {
+  local binversion
+  binversion=$(binversion)
+  local dir
+  dir=$(vdir $version)
+
+  if ! [ -f "$dir/elm" ]; then
+    err "$dir/elm is not installed"
+  fi
+
+
+  if [ -d "$dir" ] && ! same "$bin" "$dir/elm"; then
+
+    save
+
+    sudo cp "$dir/"* "$bindir/" 
+  fi
+}
+
+case $cmd in
+  use ) restore ;;
+esac
+
+
+
