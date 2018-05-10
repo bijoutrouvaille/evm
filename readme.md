@@ -13,7 +13,7 @@ Whenever you invoke `evm use x.x `, it will save the current version to `~/.evm/
 - the two are the same
 - the desired version does not exist
 
-in which cases `evm` will do nothing, possible printing an error.
+in which cases `evm` will do nothing, possibly printing an error.
 
 LICENSE
 
